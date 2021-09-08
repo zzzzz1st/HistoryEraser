@@ -1,0 +1,43 @@
+public void onStart() throws Exception
+{
+
+}
+
+public void onExecute() throws Exception
+{if(getCancellaStorico() == true && getSeiSicuro() == true){
+        String nameHistory = getNameHistory();
+        BHistoryService historyService = (BHistoryService)Sys.getService(BHistoryService.TYPE);
+        if (historyService == null)
+            throw new IllegalStateException("History Service not available.");
+        BHistoryDatabase historyDb = historyService.getDatabase();
+        if (historyDb == null)
+            throw new IllegalStateException("History database not available.");
+        StringBuffer bql = new StringBuffer();
+        List<BHistoryConfig> lista = new ArrayList<>(); 
+        bql.append("history:|bql:select id");
+        bql.append(" where id like '%"+nameHistory+"%'");
+        BOrd ord = BOrd.make(bql.toString());
+        BITable historyConfigs = (BITable)ord.get(historyService);
+        try(TableCursor<BIObject> cursor = historyConfigs.cursor()){
+          try (HistorySpaceConnection conn = historyDb.getConnection(null)){
+            while(cursor.next()){
+              lista.add((BHistoryConfig)cursor.get());                         
+              }
+              setTotal(lista.size());
+              for (BHistoryConfig i : lista){
+              BHistoryId id = i.getId();
+              BIHistory history = conn.getHistory(id);
+              conn.deleteHistory(id);
+              }
+              conn.close();
+            }
+         }
+}
+setCancellaStorico(false);
+setSeiSicuro(false);
+setNameHistory("Inserisci Il nome o parte dello storico da cancellare");
+}
+public void onStop() throws Exception
+{
+  // shutdown code here
+}
